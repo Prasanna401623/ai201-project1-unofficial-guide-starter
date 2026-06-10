@@ -137,3 +137,19 @@ A Gradio web UI at http://localhost:7860.
 - **Input:** a textbox labeled "Your question"
 - **Outputs:** "Answer" (8 lines) and "Sources" (4 lines)
 - **Usage:** the user types a question and clicks **Ask** or presses Enter.
+
+**Sample interaction transcript:**
+
+> **Question:** What do students say about Wiedemeier's exams?
+>
+> **Answer:** According to student reviews, Professor Wiedemeier's exams are
+> described as insane and completely unfair. Students say he creates exam
+> questions designed to trick people rather than test knowledge. One reviewer
+> noted he tested on material he had not yet covered in class. His quizzes and
+> tests are described as measuring how closely you watched his recorded videos
+> rather than whether you understood the subject.
+>
+> **Sources:**
+> • Paul Wiedemeier (paul_wiedemeier.txt)
+> • Bontty (bontty_history.txt)
+> • Ralph Brown (ralph_brown.txt)
