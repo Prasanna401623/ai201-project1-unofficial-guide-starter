@@ -1,162 +1,139 @@
 # The Unofficial Guide — Project 1
 
-> **How to use this template:**
-> Complete each section *after* you've built and tested the corresponding part of your system.
-> Do not write placeholder text — if a section isn't done yet, leave it blank and come back.
-> Every section below is required for submission. One-liners will not receive full credit.
+A retrieval-augmented question-answering system over student reviews of ULM professors.
 
 ---
 
 ## Domain
 
-<!-- What topic or category of knowledge does your system cover?
-     Why is this knowledge valuable, and why is it hard to find through official channels?
-     Example: "Student reviews of CS professors at [university] — useful because official
-     course descriptions don't reflect teaching style, exam difficulty, or workload." -->
+ULM professor and course reviews. Students need honest opinions about professors before registering, but official channels don't provide this. Reviews from Rate My Professors are scattered and hard to search — this system makes them queryable in plain language.
 
 ---
 
 ## Document Sources
 
-<!-- List every source you collected documents from.
-     Be specific: include URLs, subreddit names, forum thread titles, or file names.
-     Aim for variety — sources that together cover different subtopics or perspectives. -->
+10 `.txt` files manually collected from Rate My Professors, one per professor.
 
 | # | Source | Type | URL or file path |
 |---|--------|------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+| 1 | Rate My Professors | Paul Wiedemeier (CS) | documents/paul_wiedemeier.txt (https://www.ratemyprofessors.com) |
+| 2 | Rate My Professors | Bontty (History) | documents/bontty_history.txt (https://www.ratemyprofessors.com) |
+| 3 | Rate My Professors | Mallory Benedetto (Biology) | documents/mallory_benedetto.txt (https://www.ratemyprofessors.com) |
+| 4 | Rate My Professors | Neil White (Sociology) | documents/neil_white.txt (https://www.ratemyprofessors.com) |
+| 5 | Rate My Professors | John Sutherlin (Political Science) | documents/john_sutherlin.txt (https://www.ratemyprofessors.com) |
+| 6 | Rate My Professors | John Thibodeaux (Math) | documents/john_thibodeaux.txt (https://www.ratemyprofessors.com) |
+| 7 | Rate My Professors | Stephanie Olmstead (Biology) | documents/stephanie_olmstead.txt (https://www.ratemyprofessors.com) |
+| 8 | Rate My Professors | Siva Murru (Chemistry) | documents/siva_murru.txt (https://www.ratemyprofessors.com) |
+| 9 | Rate My Professors | April Picard (Math) | documents/april_picard.txt (https://www.ratemyprofessors.com) |
+| 10 | Rate My Professors | Ralph Brown (History) | documents/ralph_brown.txt (https://www.ratemyprofessors.com) |
 
 ---
 
 ## Chunking Strategy
 
-<!-- Describe your chunking approach with enough specificity that someone else could reproduce it.
-     Include:
-     - Chunk size (characters or tokens) and why that size fits your documents
-     - Overlap size and why (or why not) you used overlap
-     - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
-     - What your final chunk count was across all documents -->
+Split on `---` delimiters first to isolate individual reviews, then character-based chunking at 400 characters with 50-character overlap. Reviews are short and self-contained, so delimiter splitting keeps them intact.
 
-**Chunk size:**
+**Chunk size:** 400 characters
 
-**Overlap:**
+**Overlap:** 50 characters
 
-**Why these choices fit your documents:**
+**Why these choices fit your documents:** Each review in these documents is short and self-contained, so splitting on the `---` delimiter first isolates one review per block and prevents two professors' reviews from merging into one chunk. Character-based chunking is applied within each block as a fallback for longer reviews.
 
-**Final chunk count:**
+**Final chunk count:** 176 total chunks
+
+**Sample chunks:**
+
+- **[paul_wiedemeier.txt]** "Course: CSCI4011 | Date: Feb 19, 2025 | Grade: A — Genuinely terrible. Creates exam questions he wants people to get wrong. His exams are insane and completely unfair. Tags: TOUGH GRADER, LECTURE HEAVY, TEST HEAVY"
+- **[april_picard.txt]** "Course: MATH1031 | Date: Jul 23, 2021 | Grade: B+ — Mrs. Picard is one of the best Calculus teachers I've ever had. She provides video lectures, responds to emails quickly and cares about her students. Tags: GIVES GOOD FEEDBACK, LOTS OF HOMEWORK"
+- **[neil_white.txt]** "Course: SOC1001 | Date: Jun 21, 2023 | Grade: B — Dr. White's class is mandatory to attend. There is assigned seating and he checks every day. Do not have any electronic devices out in class. Tags: PARTICIPATION MATTERS, BEWARE OF POP QUIZZES"
+- **[john_thibodeaux.txt]** "Course: MATH1016 | Date: May 6, 2026 | Grade: D+ — I will simply say that if you plan on taking Math 1016 (Statistics) and actually learn the material and do well in the class, do not take John. He refuses to answer questions, blatantly refuses to. And when he does, he does so condescendingly and will laugh or scoff at you. Tags: TOUGH GRADER, LECTURE HEAVY, TEST HEAVY"
+- **[john_sutherlin.txt]** "Course: POLS1001 | Date: May 6, 2026 | Grade: A+ — Very approachable and nice. Extremely experienced. He made learning the material actually enjoyable. By far the best professor I have ever had. Tags: PARTICIPATION MATTERS, AMAZING LECTURES, CARING"
 
 ---
 
 ## Embedding Model
 
-<!-- Name the embedding model you used and explain your choice.
-     Then answer: if you were deploying this system for real users and cost wasn't a constraint,
-     what tradeoffs would you weigh in choosing a different model?
-     Consider: context length limits, multilingual support, accuracy on domain-specific text,
-     latency, and local vs. API-hosted. -->
+**Model used:** all-MiniLM-L6-v2 via sentence-transformers. Runs locally, no API key.
 
-**Model used:**
+**Production tradeoff reflection:** OpenAI's text-embedding-3-small has longer context and higher accuracy but costs money. Multilingual models like paraphrase-multilingual-MiniLM-L12-v2 would be needed for non-English content.
 
-**Production tradeoff reflection:**
+**Retrieval test results:**
+
+- Query "What do students say about Wiedemeier's exams?" → top chunks from paul_wiedemeier.txt (distance 0.426, 0.464, 0.469), relevant because they directly discuss his exam style and difficulty.
+- Query "Is April Picard good for students who struggle with math?" → all 5 chunks from april_picard.txt (distances 0.375–0.427), relevant because they describe her teaching style and accessibility.
+- Query "What are the main complaints about Thibodeaux?" → top chunk was a positive review (distance 0.579), retrieval failed because no chunks use the word "complaints" and distances were all above 0.5.
 
 ---
 
 ## Grounded Generation
 
-<!-- Explain how your system enforces grounding — how does it prevent the LLM from answering
-     beyond the retrieved documents?
-     Describe both your system prompt (what instruction you gave the model) and any structural
-     choices (e.g., how you formatted the context, whether you filtered low-relevance chunks).
-     Do not just say "I told it to use the documents" — show the actual instruction or explain
-     the mechanism. -->
+**System prompt grounding instruction:** The system prompt instructs the LLM: "Answer the question using only the information in the provided documents. If the documents don't contain enough information to answer, say: I don't have enough information on that."
 
-**System prompt grounding instruction:**
+**How grounding is enforced in the pipeline:** Retrieved chunks are injected into the prompt as numbered documents, and the system prompt explicitly prohibits the model from drawing on outside knowledge.
 
-**How source attribution is surfaced in the response:**
+**How source attribution is surfaced in the response:** Tested with the out-of-scope query "What is the best restaurant near ULM?" — the system correctly refused.
+
+**Example responses:**
+
+- **Q:** "What do students say about Wiedemeier's exams?" → **A:** "Students say his exams are insane and completely unfair. He creates questions designed to trick students and has tested on material covered after the exam. Sources: paul_wiedemeier.txt"
+- **Q:** "What is the best restaurant near ULM?" → **A:** "I don't have enough information on that. The provided documents do not mention restaurants near ULM." Sources: unrelated professor files (retrieval noise)
 
 ---
 
 ## Evaluation Report
 
-<!-- Run your 5 test questions from planning.md through your system and record the results.
-     Be honest — a partially accurate or inaccurate result that you explain well is more
-     valuable than a suspiciously perfect result. -->
+| # | Question | Expected answer | System response (summarized) | Verdict |
+|---|----------|-----------------|------------------------------|---------|
+| 1 | What do students say about Wiedemeier's exams? | Exams described as insane, unfair, designed to trick students | Correct content, sources slightly noisy (Bontty/Brown leaked in) | Accurate |
+| 2 | Is April Picard good for students who struggle with math? | Yes, multiple reviews of students who previously failed math and succeeded with Picard | Correct, clean retrieval, all sources from april_picard.txt | Accurate |
+| 3 | What are the main complaints about Thibodeaux? | Refuses questions condescendingly, can't explain material well, many students fail or withdraw | LLM inferred from metadata only, no actual complaint reviews retrieved | Inaccurate |
+| 4 | Does Dr. Sutherlin give feedback on assignments? | Yes, multiple reviews mention quick grading and detailed feedback | Correct, cited multiple Sutherlin reviews | Accurate |
+| 5 | What should students know before taking Neil White's sociology class? | No electronics, assigned seating, lectures have tangents but content appears on exams | Correct and thorough, 8 specific points grounded in reviews | Accurate |
 
-| # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
-|---|----------|-----------------|------------------------------|-------------------|-------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
-
-**Retrieval quality:** Relevant / Partially relevant / Off-target  
-**Response accuracy:** Accurate / Partially accurate / Inaccurate
+4/5 accurate.
 
 ---
 
 ## Failure Case Analysis
 
-<!-- Identify at least one question where retrieval or generation did not work as expected.
-     Write a specific explanation of *why* it failed, tied to a part of the pipeline.
+**Question that failed:** "What are the main complaints about Thibodeaux?"
 
-     "The answer was wrong" is not an explanation.
+**What the system returned:** The top result was actually a positive Thibodeaux review (distance 0.579), and distances were all above 0.5. The LLM inferred from metadata only, with no actual complaint reviews retrieved.
 
-     "The relevant information was split across a chunk boundary, so retrieval returned
-     only half the context — the model didn't have enough to answer correctly" is an explanation.
+**Root cause (tied to a specific pipeline stage):** Query 3 failed because the word "complaints" does not appear in any review. The embedding model could not match the query to relevant chunks — this is a vocabulary mismatch problem: students describe problems using words like "refuses to answer questions" or "can't explain" rather than "complaints."
 
-     "The embedding model treated the professor's nickname as out-of-vocabulary and returned
-     results from an unrelated review" is an explanation. -->
-
-**Question that failed:**
-
-**What the system returned:**
-
-**Root cause (tied to a specific pipeline stage):**
-
-**What you would change to fix it:**
+**What you would change to fix it:** A hybrid search approach combining semantic and keyword (BM25) search would help here.
 
 ---
 
 ## Spec Reflection
 
-<!-- Reflect on how planning.md shaped your implementation.
-     Answer both questions with at least 2–3 sentences each. -->
+**One way the spec helped you during implementation:** The planning.md spec helped by identifying the `---` delimiter structure early — that decision shaped the entire ingestion pipeline.
 
-**One way the spec helped you during implementation:**
-
-**One way your implementation diverged from the spec, and why:**
+**One way your implementation diverged from the spec, and why:** The plan specified 400-char chunking with 50-char overlap, but in practice most reviews fit in one chunk naturally, so the overlap rarely triggered. The chunking is effectively per-review rather than per-character.
 
 ---
 
 ## AI Usage
 
-<!-- Describe at least 2 specific instances where you used an AI tool during this project.
-     For each: what did you give the AI as input, what did it produce, and what did you
-     change, override, or direct differently?
-
-     "I used Claude to help me code" is not sufficient.
-     "I gave Claude my Chunking Strategy section from planning.md and asked it to implement
-     chunk_text(). It returned a function using a fixed character split. I overrode the
-     chunk size from 500 to 200 because my documents are short reviews, not long guides." -->
-
 **Instance 1**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* The Documents section and Chunking Strategy from planning.md, asking it to implement `ingest.py` and `chunk.py`.
+- *What it produced:* Claude generated the `---` delimiter split logic correctly but initially used pure character chunking, which produced mid-sentence fragments.
+- *What I changed or overrode:* Overrode this to treat each review as one chunk unless it exceeded 800 characters.
 
 **Instance 2**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* The Architecture diagram and Retrieval Approach section, asking it to implement `embed.py`, `retrieve.py`, `query.py`, and `app.py`.
+- *What it produced:* The generated grounding prompt was correct, but the sources list included noise from weak retrieval matches.
+- *What I changed or overrode:* Did not override this — documented it as a known limitation instead.
+
+---
+
+## Query Interface
+
+A Gradio web UI at http://localhost:7860.
+
+- **Input:** a textbox labeled "Your question"
+- **Outputs:** "Answer" (8 lines) and "Sources" (4 lines)
+- **Usage:** the user types a question and clicks **Ask** or presses Enter.
